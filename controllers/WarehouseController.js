@@ -83,7 +83,7 @@ exports.warehouseStore = [
 	body("availableqty", "availableqty should be number").isNumeric({ min: 0 }),
 	body("damagedqty", "damagedqty should be number").isNumeric({ min: 0 }),
 	body("reservedqty", "reservedqty should be number").isNumeric({ min: 0 }).trim().custom((value, { req }) => {
-		return Warehouse.findOne({ title: req.body.title }).then(warehouse => {
+		return Warehouse.findOne({ name : req.body.name }).then(warehouse => {
 			if (warehouse) {
 				return Promise.reject("Warehouse already exist with this title");
 			}

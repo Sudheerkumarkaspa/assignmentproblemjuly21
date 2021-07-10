@@ -1,5 +1,6 @@
 const Product = require("../models/ProductModel");
 const Warehouse = require("../models/WarehouseModel");
+const ProductLog = require("../models/ProductLogModel");
 const { body, validationResult } = require("express-validator");
 const { sanitizeBody } = require("express-validator");
 const apiResponse = require("../helpers/apiResponse");
@@ -7,14 +8,6 @@ const apiResponse = require("../helpers/apiResponse");
 var mongoose = require("mongoose");
 mongoose.set("useFindAndModify", false);
 
-// Product Schema
-function ProductData(data) {
-	this.id = data._id;
-	this.title = data.title;
-	this.price = data.description;
-	this.isbn = data.isbn;
-	this.createdAt = data.createdAt;
-}
 
 /**
  * Product List.
@@ -48,19 +41,21 @@ exports.productList = [
  */
 exports.productDetail = [
 	// auth,
-	function (req, res) {
+	async function (req, res) {
 		if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
 			return apiResponse.successResponseWithData(res, "Operation success", {});
 		}
 		try {
-			Product.findOne({ _id: req.params.id }, "_id title description createdAt").then((product) => {
-				if (product !== null) {
-					let productData = new ProductData(product);
-					return apiResponse.successResponseWithData(res, "Operation success", productData);
-				} else {
-					return apiResponse.successResponseWithData(res, "Operation success", {});
-				}
-			});
+			let productfind = await Product.findOne({ _id: req.params.id }, "_id title status createdAt")
+
+
+			// .then((product) => {
+			if (productfind !== null) {
+				return apiResponse.successResponseWithData(res, "Operation success", productfind);
+			} else {
+				return apiResponse.successResponseWithData(res, "Operation success", {});
+			}
+			// });
 		} catch (err) {
 			//throw error in json response with status 500. 
 			return apiResponse.ErrorResponse(res, err);
@@ -90,16 +85,28 @@ exports.productStore = [
 		});
 	}),
 	sanitizeBody("*").escape(),
-	(req, res) => {
+	async (req, res) => {
 		try {
 			const errors = validationResult(req);
 			var product = new Product(
 				{
 					title: req.body.title,
-					description: req.body.description,
+					status: req.body.status,
 					price: req.body.price
 				});
+			var productlog = new ProductLog(
+				{
+					product: product._id,
+					$push: {
+						logs: {
+							updatedAt: Date.now(),
+							updatedLog: 'Product Created'
+						}
+					}
+				}
+			)
 
+			console.log("PRODUCTLOG CREATED",productlog)
 			if (!errors.isEmpty()) {
 				return apiResponse.validationErrorWithData(res, "Validation Error.", errors.array());
 			}
@@ -107,11 +114,12 @@ exports.productStore = [
 				//Save product.
 				product.save(function (err) {
 					if (err) { return apiResponse.ErrorResponse(res, err); }
-					let productData = new ProductData(product);
-					return apiResponse.successResponseWithData(res, "Product add Success.", productData);
+					return apiResponse.successResponseWithData(res, "Product add Success.", product._id);
 				});
+			
 			}
 		} catch (err) {
+			console.log("err", err)
 			//throw error in json response with status 500. 
 			return apiResponse.ErrorResponse(res, err);
 		}
@@ -227,8 +235,8 @@ exports.productAddWareHouseUpdate = [
 										}
 									}
 								)
-								console.log("warehouse linked to product schema",checkforifwarehouselinkedtoproductschema)
-								if (!checkforifwarehouselinkedtoproductschema) return apiResponse.notFoundResponse(res, "Warehouse already connected to product schema");
+								console.log("warehouse linked to product schema", checkforifwarehouselinkedtoproductschema)
+								if (checkforifwarehouselinkedtoproductschema!=null) return apiResponse.notFoundResponse(res, "Warehouse already connected to product schema");
 								let addwarehousetoproductschema = await Product.findOneAndUpdate(
 									req.params.id,
 									{
@@ -249,7 +257,7 @@ exports.productAddWareHouseUpdate = [
 										}
 									}
 								)
-								if (!checkforifproductexistsinwarehouseschema) return apiResponse.notFoundResponse(res, "Product already exists in the warehouse schema");
+								if (checkforifproductexistsinwarehouseschema!=null) return apiResponse.notFoundResponse(res, "Product already exists in the warehouse schema");
 								let addproducttowarehouseschema = await Warehouse.findOneAndUpdate(
 									req.body.warehouse,
 									{
@@ -258,6 +266,18 @@ exports.productAddWareHouseUpdate = [
 										}
 									},
 									{});
+									let productlogupdate = await ProductLog.findOneAndUpdate(
+										{
+											product: req.params.id,
+										},
+										{
+											$push: {
+												'logs': 'Warehouse added'
+											}
+				
+										},
+										{});
+										console.log("UPDATE LOGS",productlogupdate)
 								if (addproducttowarehouseschema) return apiResponse.successResponseWithData(res, "Adding Product to Warehouse Schema Success.");
 
 							}
