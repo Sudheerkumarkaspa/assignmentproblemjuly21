@@ -245,40 +245,8 @@ exports.productAddWareHouseUpdate = [
 										}
 									},
 									{});
-								if (addwarehousetoproductschema) console.log("added warehouse to productschema Success");
-								// if (req.body.product) {
-								let checkforifproductexistsinwarehouseschema = await Warehouse.findOne(
-									{
-										'id': {
-											$eq: req.body.warehouse
-										},
-										'products': {
-											$eq: req.params.id
-										}
-									}
-								)
-								if (checkforifproductexistsinwarehouseschema!=null) return apiResponse.notFoundResponse(res, "Product already exists in the warehouse schema");
-								let addproducttowarehouseschema = await Warehouse.findOneAndUpdate(
-									req.body.warehouse,
-									{
-										$push: {
-											'products': req.params.id
-										}
-									},
-									{});
-									let productlogupdate = await ProductLog.findOneAndUpdate(
-										{
-											product: req.params.id,
-										},
-										{
-											$push: {
-												'logs': 'Warehouse added'
-											}
-				
-										},
-										{});
-										console.log("UPDATE LOGS",productlogupdate)
-								if (addproducttowarehouseschema) return apiResponse.successResponseWithData(res, "Adding Product to Warehouse Schema Success.");
+								if (addwarehousetoproductschema) 
+								 return apiResponse.successResponseWithData(res, "Adding Warehouse to Product Schema Success.");
 
 							}
 						}
