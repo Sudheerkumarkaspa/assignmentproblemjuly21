@@ -6,9 +6,6 @@ var WarehouseSchema = new mongoose.Schema({
 	availableqty: {type: Number, required: true,},
 	damagedqty: {type: Number, required: true},
 	reservedqty: {type: Number, required: true},
-	products: [
-		{ type: Schema.ObjectId, ref: "Product", required: false }
-	]
 }, {timestamps: true});
 
 
